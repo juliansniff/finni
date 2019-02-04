@@ -11,6 +11,12 @@ func NewFileBuffer() *FileBuffer {
 	return &FileBuffer{}
 }
 
+func (fb *FileBuffer) Insert(b byte) {
+	a := append([]byte{b}, fb.File[fb.Cursor:]...)
+	fb.File = append(fb.File[:fb.Cursor], a...)
+	fb.Cursor++
+}
+
 func (fb *FileBuffer) MoveCursorUp() error {
 	newLine := byte('\n')
 	previousLineLength, before := 0, 0
@@ -33,7 +39,7 @@ func (fb *FileBuffer) MoveCursorUp() error {
 }
 
 func (fb *FileBuffer) MoveCursorRight() error {
-	if fb.Cursor >= len(fb.File)-1 {
+	if fb.Cursor >= len(fb.File) {
 		return fmt.Errorf("Cannot move cursor to the right")
 	}
 	fb.Cursor++

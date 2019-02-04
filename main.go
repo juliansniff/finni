@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"runtime"
 
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/juliansniff/finni/editing"
 )
 
 func init() {
@@ -13,6 +15,12 @@ func init() {
 }
 
 func main() {
+	fb := &editing.FileBuffer{
+		File:   []byte("hello"),
+		Cursor: 5,
+	}
+
+	fmt.Println(string(fb.File))
 	err := glfw.Init()
 	if err != nil {
 		panic(err)

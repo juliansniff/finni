@@ -4,6 +4,29 @@ import (
 	"testing"
 )
 
+func TestInsert(t *testing.T) {
+	tests := map[string]*FileBuffer{
+		"!hello": &FileBuffer{
+			File:   []byte("hello"),
+			Cursor: 0,
+		},
+		"hel!lo": &FileBuffer{
+			File:   []byte("hello"),
+			Cursor: 3,
+		},
+		"hello!": &FileBuffer{
+			File:   []byte("hello"),
+			Cursor: 5,
+		},
+	}
+	for expected, fb := range tests {
+		fb.Insert('!')
+		if expected != string(fb.File) {
+			t.Errorf("Expected: %s, got: %s", expected, string(fb.File))
+		}
+	}
+}
+
 func TestMoveCursorUp(t *testing.T) {
 	tests := map[int]*FileBuffer{
 		3: &FileBuffer{
@@ -42,9 +65,9 @@ func TestMoveCursorUp(t *testing.T) {
 
 func TestMoveCursorRight(t *testing.T) {
 	tests := map[int]*FileBuffer{
-		3: &FileBuffer{
+		4: &FileBuffer{
 			File:   []byte("test"),
-			Cursor: 3,
+			Cursor: 4,
 		},
 		1: &FileBuffer{
 			File:   []byte("test"),
