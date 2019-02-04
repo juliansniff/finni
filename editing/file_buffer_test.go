@@ -27,6 +27,29 @@ func TestInsert(t *testing.T) {
 	}
 }
 
+func TestDelete(t *testing.T) {
+	tests := map[string]*FileBuffer{
+		"hell": &FileBuffer{
+			File:   []byte("hello"),
+			Cursor: 5,
+		},
+		"hello": &FileBuffer{
+			File:   []byte("hello"),
+			Cursor: 0,
+		},
+		"ello": &FileBuffer{
+			File:   []byte("hello"),
+			Cursor: 1,
+		},
+	}
+	for expected, fb := range tests {
+		fb.Delete()
+		if expected != string(fb.File) {
+			t.Errorf("Expected: %s, got: %s", expected, string(fb.File))
+		}
+	}
+}
+
 func TestMoveCursorUp(t *testing.T) {
 	tests := map[int]*FileBuffer{
 		3: &FileBuffer{
@@ -55,7 +78,7 @@ func TestMoveCursorUp(t *testing.T) {
 		},
 	}
 	for expected, fb := range tests {
-		_ = fb.MoveCursorUp()
+		fb.MoveCursorUp()
 		if expected != fb.Cursor {
 			t.Errorf("Expected: %d, got: %d", expected, fb.Cursor)
 		}
@@ -75,7 +98,7 @@ func TestMoveCursorRight(t *testing.T) {
 		},
 	}
 	for expected, fb := range tests {
-		_ = fb.MoveCursorRight()
+		fb.MoveCursorRight()
 		if expected != fb.Cursor {
 			t.Errorf("Expected: %d, got: %d", expected, fb.Cursor)
 		}
@@ -102,7 +125,7 @@ func TestMoveCursorDown(t *testing.T) {
 		},
 	}
 	for expected, fb := range tests {
-		_ = fb.MoveCursorDown()
+		fb.MoveCursorDown()
 		if expected != fb.Cursor {
 			t.Errorf("Expected: %d, got: %d", expected, fb.Cursor)
 		}
@@ -121,7 +144,7 @@ func TestMoveCursorLeft(t *testing.T) {
 		},
 	}
 	for expected, fb := range tests {
-		_ = fb.MoveCursorLeft()
+		fb.MoveCursorLeft()
 		if expected != fb.Cursor {
 			t.Errorf("Expected: %d, got: %d", expected, fb.Cursor)
 		}

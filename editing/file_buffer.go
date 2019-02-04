@@ -17,6 +17,15 @@ func (fb *FileBuffer) Insert(b byte) {
 	fb.Cursor++
 }
 
+func (fb *FileBuffer) Delete() error {
+	if fb.Cursor == 0 {
+		return fmt.Errorf("Cannot delete character")
+	}
+	fb.File = append(fb.File[:fb.Cursor-1], fb.File[fb.Cursor:]...)
+	fb.Cursor--
+	return nil
+}
+
 func (fb *FileBuffer) MoveCursorUp() error {
 	newLine := byte('\n')
 	previousLineLength, before := 0, 0
