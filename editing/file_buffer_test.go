@@ -18,6 +18,18 @@ func TestMoveCursorUp(t *testing.T) {
 			File:   []byte("test\ntest"),
 			Cursor: 5,
 		},
+		1: &FileBuffer{
+			File:   []byte("testing\ntest"),
+			Cursor: 9,
+		},
+		13: &FileBuffer{
+			File:   []byte("t\ntest\ntesting"),
+			Cursor: 13,
+		},
+		5: &FileBuffer{
+			File:   []byte("t\ntest\ntesting"),
+			Cursor: 11,
+		},
 	}
 	for expected, fb := range tests {
 		_ = fb.MoveCursorUp()
