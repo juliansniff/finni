@@ -1,8 +1,11 @@
 package main
 
 import (
+	"image"
+	"image/draw"
+	"image/jpeg"
 	"log"
-	"math"
+	"os"
 	"runtime"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -11,13 +14,21 @@ import (
 )
 
 var vertices = []float32{
-	0.5, -0.5, 0.0, 1.0, 0.0, 0.0,
-	-0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
-	0.0, 0.5, 0.0, 0.0, 0.0, 1.0,
+	0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0,
+	0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+	-0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+	-0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0,
 }
 
 var indices = []uint32{
-	0, 1, 2,
+	0, 1, 3,
+	1, 2, 3,
+}
+
+var texCoords = []float32{
+	0.0, 0.0,
+	1.0, 0.0,
+	0.5, 1.0,
 }
 
 func init() {
@@ -69,14 +80,43 @@ func main() {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(0))
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 8*4, gl.PtrOffset(0))
 	gl.EnableVertexAttribArray(0)
 
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
+	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 8*4, gl.PtrOffset(3*4))
 	gl.EnableVertexAttribArray(1)
 
-	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 8*4, gl.PtrOffset(6*4))
+	gl.EnableVertexAttribArray(2)
+
+	var texture uint32
+	gl.GenTextures(1, &texture)
+	gl.BindTexture(gl.TEXTURE_2D, texture)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+
+	file, err := os.Open("container.jpg")
+	if err != nil {
+		log.Panic(err)
+	}
+	defer file.Close()
+
+	img, err := jpeg.Decode(file)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	rect := img.Bounds()
+	rgba := image.NewRGBA(rect)
+	draw.Draw(rgba, rect, img, rect.Min, draw.Src)
+
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(img.Bounds().Size().X), int32(img.Bounds().Size().Y), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(rgba.Pix))
+	gl.GenerateMipmap(gl.TEXTURE_2D)
+
+	shader.Use()
+	// shader.SetInt("ourTexture", 0)
 
 	for !window.ShouldClose() {
 		processInput(window)
@@ -84,13 +124,10 @@ func main() {
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		timeValue := glfw.GetTime()
-		opacityValue := (math.Sin(timeValue) / 2.0) + 0.5
 		shader.Use()
-		shader.SetFloat("opacity", float32(opacityValue))
-
+		gl.BindTexture(gl.TEXTURE_2D, texture)
 		gl.BindVertexArray(VAO)
-		gl.DrawElements(gl.TRIANGLES, 3, gl.UNSIGNED_INT, gl.PtrOffset(0))
+		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, gl.PtrOffset(0))
 
 		window.SwapBuffers()
 		glfw.PollEvents()
