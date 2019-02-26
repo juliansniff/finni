@@ -30,7 +30,7 @@ func main() {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	window, err := glfw.CreateWindow(800, 600, "LearnOpengGL", nil, nil)
+	window, err := glfw.CreateWindow(1200, 800, "LearnOpengGL", nil, nil)
 	if err != nil {
 		log.Panic("failed to create window: %v", err)
 	}
@@ -69,10 +69,10 @@ func main() {
 	for !window.ShouldClose() {
 		processInput(window)
 
-		gl.ClearColor(1, 1, 1, 1)
+		gl.ClearColor(1.0, 1.0, 0.9176, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		renderText(shader, 10, 'Ġ')
+		renderText(shader, 10, "func() {}")
 
 		window.SwapBuffers()
 		glfw.PollEvents()
@@ -91,35 +91,43 @@ func processInput(window *glfw.Window) {
 	}
 }
 
-func renderText(s *frontend.Shader, scale float32, r rune) {
+func renderText(s *frontend.Shader, scale float32, str string) {
 	s.Use()
 	gl.Uniform3f(s.GetUniformLocation("textColor"), 0.5, 0.5, 0.5)
 	gl.BindVertexArray(VAO)
 
-	character, err := font.GetCharacter(r)
-	if err != nil {
-		log.Panic(err)
+	x := 0
+
+	for _, char := range str {
+		r := rune(char)
+		character, err := font.GetCharacter(r)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		xpos := float32(x)
+		var w, h float32
+		w = float32(character.Image.Bounds().Size().X + 5)
+		h = float32(character.Image.Bounds().Size().Y + 5)
+
+		vertices := []float32{
+			xpos, h, 0, 0,
+			xpos, 0, 0, 1,
+			xpos + w, 0, 1, 1,
+			xpos, h, 0, 0,
+			xpos + w, 0, 1, 1,
+			xpos + w, h, 1, 0,
+		}
+
+		gl.BindTexture(gl.TEXTURE_2D, character.Texture)
+		gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
+		gl.BufferSubData(gl.ARRAY_BUFFER, 0, 6*4*4, gl.Ptr(&vertices[0]))
+		gl.DrawArrays(gl.TRIANGLES, 0, 6)
+
+		gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+
+		x += 50
 	}
-
-	var w, h float32
-	w = float32(character.Image.Bounds().Size().X)
-	h = float32(character.Image.Bounds().Size().Y)
-
-	vertices := []float32{
-		0, h, 0, 0,
-		0, 0, 0, 1,
-		w, 0, 1, 1,
-		0, h, 0, 0,
-		w, 0, 1, 1,
-		w, h, 1, 0,
-	}
-
-	gl.BindTexture(gl.TEXTURE_2D, character.Texture)
-	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
-	gl.BufferSubData(gl.ARRAY_BUFFER, 0, 6*4*4, gl.Ptr(&vertices[0]))
-	gl.DrawArrays(gl.TRIANGLES, 0, 6)
-
-	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 	gl.BindVertexArray(0)
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 }
