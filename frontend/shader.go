@@ -94,3 +94,7 @@ func (s *Shader) SetInt(name string, value int32) {
 func (s *Shader) SetFloat(name string, value float32) {
 	gl.Uniform1f(gl.GetUniformLocation(s.ID, gl.Str(name+"\x00")), value)
 }
+
+func (s *Shader) GetUniformLocation(name string) int32 {
+	return gl.GetUniformLocation(s.ID, gl.Str(name+"\x00"))
+}

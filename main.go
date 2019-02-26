@@ -1,11 +1,7 @@
 package main
 
 import (
-	"image"
-	"image/draw"
-	"image/jpeg"
 	"log"
-	"os"
 	"runtime"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -14,27 +10,14 @@ import (
 	"github.com/juliansniff/finni/frontend"
 )
 
-var vertices = []float32{
-	0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0,
-	0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0,
-	-0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-	-0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0,
-}
-
-var indices = []uint32{
-	0, 1, 3,
-	1, 2, 3,
-}
-
-var texCoords = []float32{
-	0.0, 0.0,
-	1.0, 0.0,
-	0.5, 1.0,
-}
+var font *frontend.Font
+var VAO, VBO uint32
 
 func init() {
 	// GLFW event handling must run on the main OS thread
 	runtime.LockOSThread()
+
+	font, _ = frontend.NewFont(120, 120)
 }
 
 func main() {
@@ -65,77 +48,31 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+	shader.Use()
 
-	var VAO uint32
-	var VBO uint32
-	var EBO uint32
+	projection := mgl32.Ortho2D(0, 800, 0, 600)
+	gl.UniformMatrix4fv(shader.GetUniformLocation("projection"), 1, false, &projection[0])
+
 	gl.GenVertexArrays(1, &VAO)
 	gl.GenBuffers(1, &VBO)
-	gl.GenBuffers(1, &EBO)
-
 	gl.BindVertexArray(VAO)
-
 	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
-
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
-
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 8*4, gl.PtrOffset(0))
+	gl.BufferData(gl.ARRAY_BUFFER, 6*4*4, nil, gl.DYNAMIC_DRAW)
+	gl.VertexAttribPointer(0, 4, gl.FLOAT, false, 4*4, gl.PtrOffset(0))
 	gl.EnableVertexAttribArray(0)
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	gl.BindVertexArray(0)
 
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 8*4, gl.PtrOffset(3*4))
-	gl.EnableVertexAttribArray(1)
-
-	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 8*4, gl.PtrOffset(6*4))
-	gl.EnableVertexAttribArray(2)
-
-	var texture uint32
-	gl.GenTextures(1, &texture)
-	gl.BindTexture(gl.TEXTURE_2D, texture)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-
-	file, err := os.Open("container.jpg")
-	if err != nil {
-		log.Panic(err)
-	}
-	defer file.Close()
-
-	img, err := jpeg.Decode(file)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	rect := img.Bounds()
-	rgba := image.NewRGBA(rect)
-	draw.Draw(rgba, rect, img, rect.Min, draw.Src)
-
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(img.Bounds().Size().X), int32(img.Bounds().Size().Y), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(rgba.Pix))
-	gl.GenerateMipmap(gl.TEXTURE_2D)
-
-	shader.Use()
-	// shader.SetInt("ourTexture", 0)
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
 	for !window.ShouldClose() {
 		processInput(window)
 
-		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
+		gl.ClearColor(1, 1, 1, 1)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		trans := mgl32.Ident4()
-		trans = trans.Mul4(mgl32.HomogRotate3DZ(mgl32.DegToRad(float32(glfw.GetTime() * 100))))
-		trans = trans.Mul4(mgl32.Scale3D(0.5, 0.5, 0.5))
-
-		transformLoc := gl.GetUniformLocation(shader.ID, gl.Str("transform\x00"))
-		gl.UniformMatrix4fv(transformLoc, 1, false, &trans[0])
-
-		shader.Use()
-		gl.BindTexture(gl.TEXTURE_2D, texture)
-		gl.BindVertexArray(VAO)
-		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, gl.PtrOffset(0))
+		renderText(shader, 10, 'Ġ')
 
 		window.SwapBuffers()
 		glfw.PollEvents()
@@ -152,4 +89,37 @@ func processInput(window *glfw.Window) {
 	if window.GetKey(glfw.KeyF) == glfw.Press {
 		gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 	}
+}
+
+func renderText(s *frontend.Shader, scale float32, r rune) {
+	s.Use()
+	gl.Uniform3f(s.GetUniformLocation("textColor"), 0.5, 0.5, 0.5)
+	gl.BindVertexArray(VAO)
+
+	character, err := font.GetCharacter(r)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	var w, h float32
+	w = float32(character.Image.Bounds().Size().X)
+	h = float32(character.Image.Bounds().Size().Y)
+
+	vertices := []float32{
+		0, h, 0, 0,
+		0, 0, 0, 1,
+		w, 0, 1, 1,
+		0, h, 0, 0,
+		w, 0, 1, 1,
+		w, h, 1, 0,
+	}
+
+	gl.BindTexture(gl.TEXTURE_2D, character.Texture)
+	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
+	gl.BufferSubData(gl.ARRAY_BUFFER, 0, 6*4*4, gl.Ptr(&vertices[0]))
+	gl.DrawArrays(gl.TRIANGLES, 0, 6)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	gl.BindVertexArray(0)
+	gl.BindTexture(gl.TEXTURE_2D, 0)
 }
