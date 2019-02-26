@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/juliansniff/finni/frontend"
 )
 
@@ -123,6 +124,13 @@ func main() {
 
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		trans := mgl32.Ident4()
+		trans = trans.Mul4(mgl32.HomogRotate3DZ(mgl32.DegToRad(float32(glfw.GetTime() * 100))))
+		trans = trans.Mul4(mgl32.Scale3D(0.5, 0.5, 0.5))
+
+		transformLoc := gl.GetUniformLocation(shader.ID, gl.Str("transform\x00"))
+		gl.UniformMatrix4fv(transformLoc, 1, false, &trans[0])
 
 		shader.Use()
 		gl.BindTexture(gl.TEXTURE_2D, texture)
