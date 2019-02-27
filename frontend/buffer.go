@@ -2,6 +2,8 @@ package frontend
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
@@ -20,16 +22,26 @@ type Buffer struct {
 }
 
 // NewBuffer creates a Buffer.
-func NewBuffer(r rune, f *Font) (*Buffer, error) {
+func NewBuffer(path string, f *Font) (*Buffer, error) {
 	b := &Buffer{
 		Characters: make([]Character, 0),
 	}
 
-	c, err := f.GetCharacter(r)
+	fBytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		return b, fmt.Errorf("could not get character '%v': %v", r, err)
+		return b, fmt.Errorf("could not open file '%s': %v", path, err)
 	}
-	b.Characters = append(b.Characters, c)
+
+	for i := range fBytes {
+		r := rune(fBytes[i])
+
+		c, err := f.GetCharacter(r)
+		if err != nil {
+			log.Printf("could not get character '%v': %v", r, err)
+			continue
+		}
+		b.Characters = append(b.Characters, c)
+	}
 
 	gl.GenVertexArrays(1, &b.VAO)
 	gl.BindVertexArray(b.VAO)

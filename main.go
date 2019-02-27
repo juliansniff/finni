@@ -58,7 +58,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	buffer, err := frontend.NewBuffer('{', f)
+	buffer, err := frontend.NewBuffer("test.txt", f)
 	if err != nil {
 		log.Panic(err)
 	}
