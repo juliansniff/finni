@@ -2,10 +2,35 @@ package frontend
 
 import (
 	"fmt"
-	"io/ioutil"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
+
+const vs = `
+#version 410 core
+layout (location = 0) in vec4 vertex;
+
+out vec2 TexCoords;
+
+void main()
+{
+	gl_Position = vec4(vertex.xy, 1.0, 1.0);
+	TexCoords = vec2(vertex.zw);
+}
+` + "\x00"
+
+const fs = `
+#version 410 core
+in vec2 TexCoords;
+out vec4 color;
+
+uniform sampler2D text;
+
+void main()
+{
+	color = vec4(0.0, 0.0, 0.0, texture(text, TexCoords).r);
+}
+` + "\x00"
 
 // Shader encapsulates the ID of a shader program and
 // creates several utility functions to ease life.
@@ -14,24 +39,13 @@ type Shader struct {
 	ID uint32
 }
 
-func NewShader(vertexPath, fragmentPath string) (*Shader, error) {
+func NewShader() (*Shader, error) {
 	shader := &Shader{}
 	var success int32
 	var infoLog [512]uint8
 
-	// read vertex shader
-	b, err := ioutil.ReadFile(vertexPath)
-	if err != nil {
-		return shader, fmt.Errorf("error reading vertex shader: %v", err)
-	}
-	vSource, vFree := gl.Strs(string(b) + "\x00")
-
-	// read fragment shader
-	b, err = ioutil.ReadFile(fragmentPath)
-	if err != nil {
-		return shader, fmt.Errorf("error reading fragment shader: %v", err)
-	}
-	fSource, fFree := gl.Strs(string(b) + "\x00")
+	vSource, vFree := gl.Strs(vs + "\x00")
+	fSource, fFree := gl.Strs(fs + "\x00")
 
 	// compile vertex shader
 	vertex := gl.CreateShader(gl.VERTEX_SHADER)

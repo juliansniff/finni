@@ -44,10 +44,14 @@ func main() {
 	}
 
 	window.SetFramebufferSizeCallback(func(w *glfw.Window, width, height int) {
+		gl.ClearColor(1.0, 1.0, 0.9176, 1.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		w.SwapBuffers()
 		gl.Viewport(0, 0, int32(width), int32(height))
 	})
 
-	shader, err := frontend.NewShader("shaders/shader.vs", "shaders/shader.fs")
+	shader, err := frontend.NewShader()
 	if err != nil {
 		log.Panic(err)
 	}
@@ -62,6 +66,9 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
 	for !window.ShouldClose() {
 		processInput(window)

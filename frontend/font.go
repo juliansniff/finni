@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/draw"
 
+	"github.com/go-gl/gl/v4.1-core/gl"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/gomono"
 	"golang.org/x/image/font/sfnt"
@@ -118,17 +119,16 @@ func (f *Font) createCharacter(r rune) (Character, error) {
 	rasterizer.Draw(img, img.Bounds(), image.Opaque, image.Point{})
 
 	// create texture
-	// var texture uint32
-	// gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
-	// gl.GenTextures(1, &texture)
-	// gl.BindTexture(gl.TEXTURE_2D, texture)
-	// gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, int32(img.Bounds().Size().X), int32(img.Bounds().Size().Y), 0, gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(img.Pix))
-	// gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	// gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-	// gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	// gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	// gl.BindTexture(gl.TEXTURE_2d, 0)
-	// character.Texture = texture
+	gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
+	var texture uint32
+	gl.GenTextures(1, &texture)
+	gl.BindTexture(gl.TEXTURE_2D, texture)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, int32(img.Bounds().Size().X), int32(img.Bounds().Size().Y), 0, gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(img.Pix))
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	character.Texture = texture
 
 	advance, err := f.font.GlyphAdvance(nil, x, ppem, font.HintingNone)
 	if err != nil {
@@ -140,13 +140,13 @@ func (f *Font) createCharacter(r rune) (Character, error) {
 	ypos = 0 - float32(f.metrics.Descent)/64
 	h = float32(f.metrics.Height) / 64
 	w = float32(advance) / 64
-	character.Vertices = [12]float32{
-		xpos, ypos + h,
-		xpos, ypos,
-		xpos + w, ypos,
-		xpos, ypos + h,
-		xpos + w, ypos,
-		xpos + w, ypos + h,
+	character.Vertices = [24]float32{
+		xpos, ypos + h, 0.0, 0.0,
+		xpos, ypos, 0.0, 1.0,
+		xpos + w, ypos, 1.0, 1.0,
+		xpos, ypos + h, 0.0, 0.0,
+		xpos + w, ypos, 1.0, 1.0,
+		xpos + w, ypos + h, 1.0, 0.0,
 	}
 
 	return character, nil

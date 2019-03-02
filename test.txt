@@ -1,1 +1,3 @@
-hello world
+func hello() string {
+    fmt.Printf("%s", "hello world")
+}
