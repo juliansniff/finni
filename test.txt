@@ -1,4 +1,4 @@
-// comment test!
+// comment test
 func hello() string {
 	fmt.Printf("%s", "hello world")
 }
